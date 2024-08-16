@@ -1,0 +1,41 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table users {
+  id uuid [primary key]
+  login varchar
+  email varchar
+  created_at timestamp
+  password varchar
+  isDeleted bool
+}
+
+Table columns {
+  id uuid [primary key]
+  userId uuid
+  name varchar
+  description varchar
+  created_at timestamp
+  isDeleted bool
+}
+
+Table cards {
+  id uuid [primary key]
+  columnId uuid
+  name varchar
+  description varchar
+  createdAt varchar
+  isDeleted bool
+}
+
+Table comments {
+  id uuid [primary key]
+  cardId uuid
+  text varchar
+  authorId uuid
+}
+
+Ref: columns.userId > users.id // many-to-one
+Ref: cards.columnId > columns.id // many-to-one
+Ref: comments.cardId > cards.id // many-to-one
+Ref: comments.authorId > users.id // many-to-one
