@@ -9,21 +9,23 @@ import {
     NotFoundException,
     Param,
     ParseUUIDPipe,
-    Patch,
     Post,
     Put,
+    Query,
     UseGuards,
 } from '@nestjs/common';
 import { ColumnsService } from '../application/columns-service';
 import { ColumnInputDto } from './dto/input/column-input-dto';
-import { JwtLocalService } from '../../../base/services/jwt-local-service';
 import { JwtAuthGuard } from '../../auth/api/guards/jwt-auth-guard';
 import {
     ApiBadRequestResponse,
     ApiBearerAuth,
+    ApiForbiddenResponse,
     ApiOperation,
+    ApiQuery,
     ApiResponse,
     ApiTags,
+    ApiTooManyRequestsResponse,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUserId } from '../../../common/decorators/validate/current-user-id-decorator';
@@ -31,6 +33,9 @@ import { ApiErrorResult } from '../../../base/models/api-error-result';
 import { ColumnViewDto } from './dto/output/column-view-dto';
 import { ColumnWithAllInfoViewDto } from './dto/output/column-with-all-info-view-dto';
 import { IsOwnerColumnGuard } from '../../../common/guards/is-owner-column-guard';
+import { CardViewDto } from '../../cards/api/dto/output/card-view-dto';
+import { PaginatorWithCardsDto } from '../../../common/dto/paginator-dto';
+import { QueryDto } from '../../../common/dto/query-dto';
 
 @ApiTags('Columns')
 @Controller('columns')
@@ -52,6 +57,9 @@ export class ColumnsController {
     })
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
+    })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
     })
     async createColumn(
         @Body() columnInputDto: ColumnInputDto,
@@ -83,7 +91,7 @@ export class ColumnsController {
     @ApiResponse({
         status: HttpStatus.OK,
         description: 'Returns found column',
-        type: ColumnWithAllInfoViewDto,
+        type: ColumnViewDto,
     })
     @ApiBadRequestResponse({
         type: ApiErrorResult,
@@ -91,6 +99,9 @@ export class ColumnsController {
     })
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
+    })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
     })
     async getColumnById(@Param('columnId', ParseUUIDPipe) columnId: string) {
         const columnInterlayer =
@@ -120,6 +131,9 @@ export class ColumnsController {
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
     })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
+    })
     async deleteColumnById(@Param('columnId', ParseUUIDPipe) columnId: string) {
         const columnInterlayer =
             await this.columnsService.deleteColumn(columnId);
@@ -134,9 +148,34 @@ export class ColumnsController {
     @HttpCode(HttpStatus.OK)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get cards by column id' })
+    @ApiQuery({
+        name: 'sortBy',
+        type: 'string',
+        example: 'createdAt',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'sortDirection',
+        enum: ['asc', 'desc'],
+        example: 'desc',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'pageNumber',
+        type: 'Number',
+        example: '1',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'pageSize',
+        type: 'Number',
+        example: '10',
+        required: false,
+    })
     @ApiResponse({
         status: HttpStatus.OK,
         description: 'Success',
+        type: PaginatorWithCardsDto,
     })
     @ApiBadRequestResponse({
         type: ApiErrorResult,
@@ -145,11 +184,17 @@ export class ColumnsController {
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
     })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
+    })
     async getCardsByColumnId(
         @Param('columnId', ParseUUIDPipe) columnId: string,
+        @Query() query: QueryDto,
     ) {
-        const columnInterlayer =
-            await this.columnsService.getCardsByColumnId(columnId);
+        const columnInterlayer = await this.columnsService.getCardsByColumnId(
+            columnId,
+            query,
+        );
 
         if (columnInterlayer.hasError()) {
             throw new NotFoundException();
@@ -171,8 +216,14 @@ export class ColumnsController {
         type: ApiErrorResult,
         description: 'If the inputModel has incorrect values',
     })
+    @ApiForbiddenResponse({
+        description: 'If user is not owner of column',
+    })
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
+    })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
     })
     async updateColumn(
         @Body() columnInputDto: ColumnInputDto,

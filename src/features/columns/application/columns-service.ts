@@ -7,6 +7,11 @@ import { ColumnsRepository } from '../infrastructure/columns-repository';
 import { ColumnsQueryRepository } from '../infrastructure/columns-query-repository';
 import { CardsQueryRepository } from '../../cards/infrastructure/cards-query-repository';
 import { CardsWithCommentsViewDto } from '../../cards/api/dto/output/cards-with-comments-view-dto';
+import { QueryDto } from '../../../common/dto/query-dto';
+import { Paginator } from '../../../common/dto/paginator-dto';
+import { CardViewDto } from '../../cards/api/dto/output/card-view-dto';
+import { columnToColumnDtoMapper } from '../../../base/mappers/column-view-mapper';
+import { ColumnViewDto } from '../api/dto/output/column-view-dto';
 
 @Injectable()
 export class ColumnsService {
@@ -20,21 +25,21 @@ export class ColumnsService {
     async createColumn(
         columnInputDto: ColumnInputDto,
         userId: string,
-    ): Promise<InterlayerNotice<Columns>> {
-        const notice = new InterlayerNotice<Columns>();
+    ): Promise<InterlayerNotice<ColumnViewDto>> {
+        const notice = new InterlayerNotice<ColumnViewDto>();
         const user = await this.usersQueryRepository.findUserById(userId);
 
         const column = await this.columnsRepository.createColumn(
             columnInputDto,
             userId,
         );
-        notice.addData(column);
+        notice.addData(columnToColumnDtoMapper(column));
 
         return notice;
     }
 
     async getColumnById(columnId: string) {
-        const notice = new InterlayerNotice<Columns>();
+        const notice = new InterlayerNotice<ColumnViewDto>();
 
         const column =
             await this.columnsQueryRepository.findColumnById(columnId);
@@ -47,7 +52,7 @@ export class ColumnsService {
     }
 
     async getColumnByIdAndUserId(columnId: string, userId: string) {
-        const notice = new InterlayerNotice<Columns>();
+        const notice = new InterlayerNotice<ColumnViewDto>();
 
         const column =
             await this.columnsQueryRepository.findColumnByIdAndUserId(
@@ -75,11 +80,14 @@ export class ColumnsService {
 
     async getCardsByColumnId(
         columnId: string,
-    ): Promise<InterlayerNotice<CardsWithCommentsViewDto[]>> {
-        const notice = new InterlayerNotice<CardsWithCommentsViewDto[]>();
+        query: QueryDto,
+    ): Promise<InterlayerNotice<Paginator<CardViewDto>>> {
+        const notice = new InterlayerNotice<Paginator<CardViewDto>>();
 
-        const cards =
-            await this.cardsQueryRepository.findCardsByColumnId(columnId);
+        const cards = await this.cardsQueryRepository.findCardsByColumnId(
+            columnId,
+            query,
+        );
         if (!cards) {
             notice.addError('cards was not found');
             return notice;

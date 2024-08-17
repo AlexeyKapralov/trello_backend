@@ -26,8 +26,8 @@ export class CommentsService {
         const card = this.cardsQueryRepository.findCardById(cardId);
         if (!card) {
             notice.addError(
-                'card was not found',
-                'card',
+                'comment was not found',
+                'comment',
                 InterlayerStatuses.NOT_FOUND,
             );
             return notice;
@@ -47,6 +47,80 @@ export class CommentsService {
             return notice;
         }
         notice.addData(commentToCommentDtoMapper(comment));
+        return notice;
+    }
+
+    async deleteComment(
+        commentId: string,
+    ): Promise<InterlayerNotice<CommentViewDto>> {
+        const notice = new InterlayerNotice();
+
+        const comment = await this.commentsRepository.getComment(commentId);
+        if (!comment) {
+            notice.addError(
+                'comment was not found',
+                'comment',
+                InterlayerStatuses.NOT_FOUND,
+            );
+            return notice;
+        }
+
+        const isDeleteComment =
+            await this.commentsRepository.deleteComment(commentId);
+        if (!isDeleteComment) {
+            notice.addError(
+                'comment was not deleted',
+                'comment',
+                InterlayerStatuses.BAD_REQUEST,
+            );
+            return notice;
+        }
+        return notice;
+    }
+
+    async getComment(
+        commentId: string,
+    ): Promise<InterlayerNotice<CommentViewDto>> {
+        const notice = new InterlayerNotice<CommentViewDto>();
+
+        const comment = await this.commentsRepository.getComment(commentId);
+        if (!comment) {
+            notice.addError(
+                'comment was not found',
+                'comment',
+                InterlayerStatuses.NOT_FOUND,
+            );
+            return notice;
+        }
+
+        notice.addData(commentToCommentDtoMapper(comment));
+        return notice;
+    }
+
+    async updateComment(
+        commentId: string,
+        commentInputDto: CommentInputDto,
+    ): Promise<InterlayerNotice> {
+        const notice = new InterlayerNotice();
+
+        const comment = await this.commentsRepository.getComment(commentId);
+        if (!comment) {
+            notice.addError(
+                'comment was not found',
+                'comment',
+                InterlayerStatuses.NOT_FOUND,
+            );
+            return notice;
+        }
+
+        const isUpdateComment = await this.commentsRepository.updateComment(
+            commentId,
+            commentInputDto,
+        );
+        if (!isUpdateComment) {
+            notice.addError('comment was not updated');
+            return notice;
+        }
         return notice;
     }
 }

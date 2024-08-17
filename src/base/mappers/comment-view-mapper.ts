@@ -8,5 +8,6 @@ export const commentToCommentDtoMapper = (comment: Comment): CommentViewDto => {
         id: comment.id,
         text: comment.text,
         userId: comment.userId,
+        createdAt: comment.createdAt.toISOString(),
     };
 };

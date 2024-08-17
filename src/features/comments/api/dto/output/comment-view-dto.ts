@@ -9,4 +9,7 @@ export class CommentViewDto {
 
     @ApiProperty()
     userId: string;
+
+    @ApiProperty()
+    createdAt: string;
 }

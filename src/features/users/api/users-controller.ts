@@ -10,6 +10,7 @@ import {
     Param,
     ParseUUIDPipe,
     Post,
+    Query,
     UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
@@ -21,8 +22,10 @@ import {
     ApiBearerAuth,
     ApiNotFoundResponse,
     ApiOperation,
+    ApiQuery,
     ApiResponse,
     ApiTags,
+    ApiTooManyRequestsResponse,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { UserViewDto } from './dto/output/user-view-dto';
@@ -33,11 +36,16 @@ import { QueryBus } from '@nestjs/cqrs';
 import { InterlayerNotice } from '../../../base/models/interlayer';
 import {
     FindColumnsQueryPayload,
-    FindUsersQueryResultType,
+    FindColumnsQueryResultType,
 } from '../infrastructure/queries/get-columns-query';
-import { IsString } from 'class-validator';
-import { ColumnWithAllInfoViewDto } from '../../columns/api/dto/output/column-with-all-info-view-dto';
 import { AuthGuard } from '@nestjs/passport';
+import {
+    FindCardsQueryPayload,
+    FindCardsQueryResultType,
+} from '../../cards/infrastructure/queries/get-cards-query';
+import { QueryDto } from '../../../common/dto/query-dto';
+import { PaginatorWithCardsDto } from '../../../common/dto/paginator-dto';
+import { ColumnViewDto } from '../../columns/api/dto/output/column-view-dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -64,6 +72,9 @@ export class UsersController {
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
     })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
+    })
     async createUser(@Body() userBody: UserInputDto) {
         const createdUserInterlayer =
             await this.userService.createUser(userBody);
@@ -89,7 +100,7 @@ export class UsersController {
     @ApiResponse({
         status: HttpStatus.OK,
         description: 'Returns all columns',
-        type: ColumnWithAllInfoViewDto,
+        type: ColumnViewDto,
     })
     @ApiBadRequestResponse({
         type: ApiErrorResult,
@@ -98,12 +109,15 @@ export class UsersController {
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
     })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
+    })
     async getColumnsForUser(@Param('userId', ParseUUIDPipe) userId: string) {
         const payload = new FindColumnsQueryPayload(userId);
 
         const findResult = await this.queryBus.execute<
             FindColumnsQueryPayload,
-            InterlayerNotice<FindUsersQueryResultType>
+            InterlayerNotice<FindColumnsQueryResultType>
         >(payload);
 
         return findResult.data;
@@ -128,6 +142,9 @@ export class UsersController {
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
     })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
+    })
     async getUser(@Param('userId', ParseUUIDPipe) userId: string) {
         const userInterlayer = await this.userService.findUserById(userId);
 
@@ -136,6 +153,63 @@ export class UsersController {
         }
 
         return userInterlayer.data;
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get(':userId/cards')
+    @ApiBearerAuth()
+    @ApiQuery({
+        name: 'sortBy',
+        type: 'string',
+        example: 'createdAt',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'sortDirection',
+        enum: ['asc', 'desc'],
+        example: 'desc',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'pageNumber',
+        type: 'Number',
+        example: '1',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'pageSize',
+        type: 'Number',
+        example: '10',
+        required: false,
+    })
+    @ApiOperation({ summary: 'Find cards for user' })
+    @ApiResponse({
+        status: HttpStatus.OK,
+        description: 'Returns all cards',
+        type: PaginatorWithCardsDto,
+    })
+    @ApiBadRequestResponse({
+        type: ApiErrorResult,
+        description: 'If the inputModel has incorrect values',
+    })
+    @ApiUnauthorizedResponse({
+        description: 'Unauthorized',
+    })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
+    })
+    async getCardsForUser(
+        @Param('userId', ParseUUIDPipe) userId: string,
+        @Query() query: QueryDto,
+    ) {
+        const payload = new FindCardsQueryPayload(userId, query);
+
+        const findResult = await this.queryBus.execute<
+            FindCardsQueryPayload,
+            InterlayerNotice<FindCardsQueryResultType>
+        >(payload);
+
+        return findResult.data;
     }
 
     @UseGuards(AuthGuard('basic'))
@@ -149,6 +223,9 @@ export class UsersController {
     })
     @ApiUnauthorizedResponse({
         description: 'Unauthorized',
+    })
+    @ApiTooManyRequestsResponse({
+        description: 'Too many attempts from one IP-address',
     })
     async deleteUser(@Param('userId', ParseUUIDPipe) userId: string) {
         const userInterlayer = await this.userService.deleteUserById(userId);

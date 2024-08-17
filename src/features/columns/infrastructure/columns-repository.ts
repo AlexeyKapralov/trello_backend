@@ -5,7 +5,6 @@ import { CryptoService } from '../../../base/services/crypto-service';
 import { ColumnInputDto } from '../api/dto/input/column-input-dto';
 import { Columns } from '../domain/columns-entity';
 import { Card } from '../../cards/domain/cards-entity';
-import { Comment } from '../../comments/domain/comments-entity';
 
 @Injectable()
 export class ColumnsRepository {

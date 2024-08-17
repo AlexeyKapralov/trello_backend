@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { LoginInputDto } from '../api/dto/input/login-input-dto';
 import { InterlayerNotice } from '../../../base/models/interlayer';
-import { TokenDto } from '../../../base/models/token-dto';
-import { User } from '../../users/domain/users-entity';
+import { TokenDto } from '../../../common/dto/token-dto';
 import { ApiSettings } from '../../../settings/env/api-settings';
-import { UsersQueryRepository } from '../../users/infrastructure/users-query-repository';
 import { CryptoService } from '../../../base/services/crypto-service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -13,7 +11,6 @@ import { UsersRepository } from '../../users/infrastructure/users-repository';
 @Injectable()
 export class AuthService {
     constructor(
-        private readonly userQueryRepository: UsersQueryRepository,
         private readonly userRepository: UsersRepository,
         private readonly cryptoService: CryptoService,
         private readonly jwtService: JwtService,

@@ -8,6 +8,7 @@ import { UsersQueryRepository } from './infrastructure/users-query-repository';
 import { CryptoService } from '../../base/services/crypto-service';
 import { CqrsModule } from '@nestjs/cqrs';
 import { FindColumnsQuery } from './infrastructure/queries/get-columns-query';
+import { FindCardsQuery } from '../cards/infrastructure/queries/get-cards-query';
 
 @Module({
     imports: [TypeOrmModule.forFeature([User]), CqrsModule],
@@ -18,6 +19,7 @@ import { FindColumnsQuery } from './infrastructure/queries/get-columns-query';
         UsersQueryRepository,
         CryptoService,
         FindColumnsQuery,
+        FindCardsQuery,
     ],
     exports: [UsersService, UsersRepository, UsersQueryRepository],
 })

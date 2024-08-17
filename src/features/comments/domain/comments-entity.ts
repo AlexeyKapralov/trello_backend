@@ -16,6 +16,7 @@ export class Comment {
     text: string;
 
     @Column()
+    @Exclude()
     userId: string;
 
     @Column()

@@ -6,43 +6,43 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { ColumnsService } from '../../features/columns/application/columns-service';
+import { CommentsQueryRepository } from '../../features/comments/infrastructure/comments-query-repository';
 
 @Injectable()
-export class IsOwnerColumnGuard implements CanActivate {
-    constructor(private columnsService: ColumnsService) {}
+export class IsOwnerCommentGuard implements CanActivate {
+    constructor(private commentsQueryRepository: CommentsQueryRepository) {}
 
     async canActivate(context: ExecutionContext) {
         const request = context.switchToHttp().getRequest();
 
         if (request?.user) {
             const userId = request.user.id;
-            const columnId = request.params.columnId;
+            const commentId = request.params.commentId;
 
             if (
-                columnId.length !== 36 ||
-                !columnId.match(
+                commentId.length !== 36 ||
+                !commentId.match(
                     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
                 )
             ) {
                 throw new BadRequestException({
-                    message: 'column id must be uuid',
-                    field: 'columnId',
+                    message: 'comment id must be uuid',
+                    field: 'commentId',
                 });
             }
 
-            const columnByIdInterlayer =
-                await this.columnsService.getColumnById(columnId);
-            if (columnByIdInterlayer.hasError()) {
+            let commentById =
+                await this.commentsQueryRepository.findCommentById(commentId);
+            if (!commentById) {
                 throw new NotFoundException();
             }
 
-            const columnInterlayer =
-                await this.columnsService.getColumnByIdAndUserId(
-                    columnId,
+            let commentByIdAndUserId =
+                await this.commentsQueryRepository.findCommentByIdAndUserId(
+                    commentId,
                     userId,
                 );
-            if (columnInterlayer.hasError()) {
+            if (!commentByIdAndUserId) {
                 throw new ForbiddenException();
             }
             return true;

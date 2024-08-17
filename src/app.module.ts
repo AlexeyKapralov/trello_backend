@@ -1,22 +1,19 @@
-import { Global, Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { Global, Module, UseGuards } from '@nestjs/common';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration, {
     ConfigurationType,
     validate,
 } from './settings/env/configuration';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersController } from './features/users/api/users-controller';
-import { UsersService } from './features/users/application/users-service';
-import { UsersRepository } from './features/users/infrastructure/users-repository';
 import { UsersModule } from './features/users/users-module';
 import { AuthModule } from './features/auth/auth-module';
-import { AuthController } from './features/auth/api/auth-controller';
 import { ColumnsModule } from './features/columns/columns-module';
 import { PassportModule } from '@nestjs/passport';
 import { CardsModule } from './features/cards/cards-module';
 import { CommentsModule } from './features/comments/comments-module';
-import { CqrsModule } from '@nestjs/cqrs';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerBehindProxyGuard } from './features/auth/api/guards/throttle-behind-proxy-guard';
 
 @Global()
 @Module({
@@ -71,6 +68,11 @@ import { CqrsModule } from '@nestjs/cqrs';
         PassportModule,
     ],
     controllers: [],
-    providers: [],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+        },
+    ],
 })
 export class AppModule {}
